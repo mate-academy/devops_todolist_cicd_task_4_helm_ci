@@ -59,7 +59,7 @@ jobs:
   docker-ci:
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
-    needs: python-ci
+    needs: ['python-ci']
     steps:
 
     - uses: actions/download-artifact@v4
@@ -89,7 +89,7 @@ jobs:
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
 
   helm-ci:
-    needs: python-ci
+    needs: ['python-ci']
     runs-on: ubuntu-latest
     if: github.ref_name == 'main'
     name: Helm CI
