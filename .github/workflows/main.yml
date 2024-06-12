@@ -56,6 +56,13 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        if: github.ref_name == 'main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts          
+
   docker-ci:
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
@@ -67,13 +74,6 @@ jobs:
       with:
         name: python-artifacts
         path: .
-
-    - name: Upload helm artifacts
-      if: github.ref_name == 'main'
-      uses: actions/upload-artifact@v4
-      with:
-        name: helm-artifacts
-        path: ${{ github.workspace }}/helm-charts
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
