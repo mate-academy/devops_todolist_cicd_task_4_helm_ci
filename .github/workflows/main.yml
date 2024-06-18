@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
-          path: ${{ github.workspace }}/helm-charts          
+          path: ${{ github.workspace }}/helm-charts
 
   docker-ci:
     runs-on: ubuntu-latest
@@ -106,7 +106,7 @@ jobs:
       run: helm lint ./todoapp/
 
     - name: Template Helm
-      run: helm template todoapp ./todoapp -f ./todoapp/values.yaml
+      run: helm template todoapp ./todoapp/ -f ./todoapp/values.yaml
 
     - name: Package Helm
       run: helm package ./todoapp
