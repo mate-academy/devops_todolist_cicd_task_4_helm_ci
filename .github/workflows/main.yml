@@ -56,9 +56,16 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        if: github.ref_name == 'main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
+
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: github.ref_name == 'main'
     needs: python-ci
     steps:
 
@@ -67,13 +74,6 @@ jobs:
       with:
         name: python-artifacts
         path: .
-
-    - name: Upload helm artifacts
-      if: github.ref_name == 'main'
-      uses: actions/upload-artifact@v4
-      with:
-        name: helm-artifacts
-        path: ${{ github.workspace }}/helm-charts
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -89,8 +89,8 @@ jobs:
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
 
   helm-ci:
-    needs: build-image
-    runs-on: python-ci
+    needs: python-ci
+    runs-on: ubuntu-latest
     if: github.ref_name == 'main'
     name: Helm CI
     steps:
@@ -103,13 +103,13 @@ jobs:
       uses: azure/setup-helm@v4.2.0
 
     - name: Lint Helm
-      run: helm lint ./kube2py/
+      run: helm lint ./todoapp/
 
     - name: Template Helm
-      run: helm template kube2py ./kube2py -f ./kube2py/values.yaml
+      run: helm template todoapp ./todoapp/ -f ./todoapp/values.yaml
 
     - name: Package Helm
-      run: helm package ./kube2py/
+      run: helm package ./todoapp
 
     - name: Upload Helm package
       uses: actions/upload-artifact@v4
