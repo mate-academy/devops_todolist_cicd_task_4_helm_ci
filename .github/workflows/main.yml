@@ -111,7 +111,7 @@ jobs:
     - name: Package Helm
       run: helm package ./todoapp
 
-    - name: Upload Helm package
+    - name: Upload Helm Artifact
       uses: actions/upload-artifact@v4
       with:
         name: helm-package
