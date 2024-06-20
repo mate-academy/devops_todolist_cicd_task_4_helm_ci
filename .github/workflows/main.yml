@@ -65,7 +65,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: always()
+    if:  ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' && github.base_ref == 'main' }}
     needs: python-ci
     steps:
     - name: Check event info
@@ -96,7 +96,7 @@ jobs:
   helm-ci:
     needs: python-ci
     runs-on: ubuntu-latest
-    if: always()
+    if:  ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' && github.base_ref == 'main' }}
     
     name: Helm CI
     steps:
