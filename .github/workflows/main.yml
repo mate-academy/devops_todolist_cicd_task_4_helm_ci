@@ -65,9 +65,14 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' && github.base_ref == 'refs/heads/main' }}
+    if: always()
     needs: python-ci
     steps:
+    - name: Check event info
+      run: |
+        echo "Event name: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Base ref: ${{ github.base_ref }}"
 
     - uses: actions/download-artifact@v4
       name: Download python artifacts
@@ -91,10 +96,16 @@ jobs:
   helm-ci:
     needs: python-ci
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' && github.base_ref == 'refs/heads/main' }}
-
+    if: always()
+    
     name: Helm CI
     steps:
+    - name: Check event info
+      run: |
+        echo "Event name: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Base ref: ${{ github.base_ref }}"
+    
     - uses: actions/download-artifact@v4
       with:
         name: helm-artifacts
