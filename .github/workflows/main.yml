@@ -101,13 +101,13 @@ jobs:
         uses: azure/setup-helm@v4.2.0
 
       - name: Lint helm
-        run: helm lint ./helm-charts
+        run: helm lint ./helm-charts/todoapp
 
       - name: Template Helm
-        run: helm template ./helm-charts -f ./helm-charts/values.yaml
+        run: helm template ./helm-charts/todoapp -f ./helm-charts/todoapp/values.yaml
 
       - name: Package Helm
-        run: helm package ./helm-charts
+        run: helm package ./helm-charts/todoapp
 
       - name: Upload Helm Artifact
         uses: actions/upload-artifact@v4
