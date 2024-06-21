@@ -57,7 +57,7 @@ jobs:
           path: .
 
       - name: Upload helm artifacts
-        if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+        if: ${{ github.ref_name == 'main' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
@@ -65,7 +65,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     needs: python-ci
     steps:
 
