@@ -67,9 +67,8 @@ jobs:
     if: ${{ github.ref_name == 'main' }}
     needs: python-ci
     steps:
-
-    - uses: actions/download-artifact@v4
-      name: Download python artifacts
+    - name: Download python artifacts
+      uses: actions/download-artifact@v4
       with:
         name: python-artifacts
         path: .
@@ -90,11 +89,28 @@ jobs:
   helm-ci:
     runs-on: ubuntu-latest
     needs: python-ci
-    if: github.ref_name == 'main'
+    if: ${{ github.ref_name == 'main' }}
 
     steps:
+      - name: Download helm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-artifacts
+          path: .
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
 
-    - uses: actions/download-artifact@v4
-      with: helm-artifacts
-      path: .
+      - name: Lint helm
+        run: helm lint ./helm-charts
 
+      - name: Template Helm
+        run: helm template ./helm-charts -f ./helm-charts/values.yaml
+
+      - name: Package Helm
+        run: helm package ./helm-charts
+
+      - name: Upload Helm Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-package
+          path: ./*.tgz
