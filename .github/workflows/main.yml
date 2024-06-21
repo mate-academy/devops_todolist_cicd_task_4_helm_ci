@@ -57,7 +57,7 @@ jobs:
           path: .
 
       - name: Upload helm artifacts
-        if: ${{ github.ref_name == 'main' }}
+        if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
@@ -91,7 +91,7 @@ jobs:
   helm-ci:
     needs: python-ci
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     name: Helm CI
     steps:
     - uses: actions/download-artifact@v4
