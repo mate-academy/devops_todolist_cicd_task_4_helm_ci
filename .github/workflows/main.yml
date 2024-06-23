@@ -89,7 +89,7 @@ jobs:
   helm-ci:
     runs-on: ubuntu-latest
     needs: python-ci
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.base_ref == 'main' }}
 
     steps:
       - name: Download helm artifacts
