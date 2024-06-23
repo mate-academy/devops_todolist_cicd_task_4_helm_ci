@@ -64,7 +64,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.base_ref == 'main' }}
     needs: python-ci
     steps:
     - name: Download python artifacts
