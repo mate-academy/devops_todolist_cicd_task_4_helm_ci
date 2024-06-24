@@ -9,23 +9,25 @@ on:
     branches: ["main"]
 
 env:
-  PythonVersion: 3.8
-  DockerImageName: todoapp
+  PYTHON_VERSION: 3.8
+  DOCKER_IMAGE_NAME: todoapp
 
 jobs:
   python-ci:
     runs-on: ubuntu-latest
+    name: Python CI
     defaults:
       run:
         working-directory: ./src
     steps:
+    
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PythonVersion }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ env.PythonVersion }}
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
         run: |
@@ -56,9 +58,17 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        if: github.ref_name == 'main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
+
   docker-ci:
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
+    name: Docker CI
     needs: python-ci
     steps:
 
@@ -79,4 +89,37 @@ jobs:
       with:
         push: true
         context: ./src
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: python-ci
+    if: github.ref_name == 'main'
+    name: Helm CI
+    steps:
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: helm-artifacts
+        path: .
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v4.2.0
+
+    - name: Lint Helm
+      run: helm lint ./todoapp/
+
+    - name: Template Helm
+      run: helm template todoapp ./todoapp -f ./todoapp/values.yaml
+
+    - name: Template Helm
+      run: helm template todoapp ./todoapp -f ./todoapp/values.yaml
+
+    - name: Package Helm
+      run: helm package ./todoapp/
+
+    - name: Upload Helm package
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
