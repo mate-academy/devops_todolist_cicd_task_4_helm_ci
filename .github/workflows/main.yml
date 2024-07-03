@@ -129,7 +129,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update Docker and Helm artifacts
-          branch: develop
+          branch: main
           title: 'Update Docker and Helm artifacts'
           body: |
             This PR updates latest commit hash: ${{ github.sha }}.
