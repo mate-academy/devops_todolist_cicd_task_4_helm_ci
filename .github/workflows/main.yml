@@ -115,23 +115,3 @@ jobs:
       with:
         name: helm-package
         path: ./*.tgz
-
-
-  create-pr:
-    runs-on: ubuntu-latest
-    needs: [docker-ci, helm-ci]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Update Docker and Helm artifacts
-          branch: develop
-          base: main
-          title: 'Update Docker and Helm artifacts'
-          body: |
-            This PR updates latest commit hash: ${{ github.sha }}.
-            The workflow run for Docker CI and Helm CI are available at: ${{ github.run_url }}
