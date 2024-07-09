@@ -1,9 +1,9 @@
-# Django ToDo list
-
+# Django ToDo list 
+ 
 This is a to-do list web application with the basic features of most web apps, such as accounts/login, API, and interactive UI. 
-
+ 
 To complete this task, you will need:
-
+ 
 - CSS | [Skeleton](http://getskeleton.com/)
 - JS  | [jQuery](https://jquery.com/)
 
