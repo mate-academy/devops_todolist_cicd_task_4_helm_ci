@@ -56,6 +56,13 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        if: github.ref_name == 'main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
+
   docker-ci:
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
@@ -80,3 +87,26 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    name: Helm CI
+    runs-on: ubuntu-latest
+    if: ${{ github.ref_name == 'main' }}
+    needs: python-ci
+    steps:
+    - uses: actions/download-artifact@v4
+      name: Download Helm artifacts
+      with:
+        name: helm-artifacts
+        path: .
+    - name: Template Helm
+      run: helm template todoapp ./todoapp/ -f ./todoapp/values.yaml
+    - name: Lint Helm
+      run: helm lint ./todoapp/
+    - name: Package Helm
+      run: helm package ./todoapp
+    - name: Upload Helm Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
