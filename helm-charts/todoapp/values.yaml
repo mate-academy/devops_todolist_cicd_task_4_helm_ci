@@ -7,8 +7,8 @@ mysql:
 todoapp:
   namespace: todoapp
   image:
-    repository: ikulyk404/todoapp
-    tag: "4.0.1"
+    repository: fredfredburger/todolist
+    tag: 0af88c3fc50a56d59bf11b3dc22bc760b27d0634
 
   resources:
     requests:
