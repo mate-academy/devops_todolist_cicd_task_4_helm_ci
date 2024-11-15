@@ -7,8 +7,8 @@ mysql:
 todoapp:
   namespace: todoapp
   image:
-    repository: ikulyk404/todoapp
-    tag: "4.0.1"
+    repository: valerakb/todoapp
+    tag: "4.0.0"
 
   resources:
     requests:
