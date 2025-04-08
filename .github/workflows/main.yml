@@ -56,14 +56,8 @@ jobs:
           name: python-artifacts
           path: .
 
-      - name: Verify helm-artifacts directory exists
-        run: |
-            if [ ! -d "helm-artifacts" ]; then
-              echo "❌ helm-artifacts folder not found!"
-              exit 1
-            fi
-
       - name: Upload helm artifacts
+        if: ${{ hashFiles('helm-artifacts/**') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
