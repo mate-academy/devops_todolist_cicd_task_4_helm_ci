@@ -1,7 +1,7 @@
 todoapp:
   namespace: todoapp
   image:
-    repository: ikulyk404/todoapp
+    repository: ikulyk404/mate2py
 
   resources:
     requests:
