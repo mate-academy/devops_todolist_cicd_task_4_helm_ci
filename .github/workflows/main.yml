@@ -10,7 +10,7 @@ on:
 
 env:
   PythonVersion: 3.8
-  DockerImageName: todoapp
+  DockerImageName: todoapp-python
 
 jobs:
   python-ci:
@@ -56,6 +56,12 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
+          
   docker-ci:
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
@@ -80,3 +86,34 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: python-ci
+    if: ${{ github.ref_name == 'main' }}
+
+    steps:
+
+    - uses: actions/download-artifact@v4
+      name: Download Helm artifacts
+      with:
+        name: helm-artifacts
+        path: .
+
+    - name: Setup Helm
+      uses: azure/setup-helm@4.2.0
+
+    - name: Lint Helm
+      run: helm lint ./helm-charts/todoapp
+
+    - name: Helm Template 
+      run: helm template todoapp ./helm-charts/todoapp -f ./helm-charts/todoapp/values.yaml
+
+    - name: Helm Package 
+      run: helm package ./helm-charts/todoapp
+    
+    - name: Upload Helm Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
