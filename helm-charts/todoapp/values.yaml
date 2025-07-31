@@ -7,7 +7,7 @@ mysql:
 todoapp:
   namespace: todoapp
   image:
-    repository: ikulyk404/todoapp
+    repository: bohdansukhy/todoapp
     tag: "4.0.1"
 
   resources:
@@ -29,9 +29,9 @@ todoapp:
     minReplicas: 2
     maxReplicas: 5
     cpu:
-      avarageUtilization: 70
+      averageUtilization: 70
     memory:
-      avarageUtilization: 70
+      averageUtilization: 70
 
   volumes:
     persistentVolume:
