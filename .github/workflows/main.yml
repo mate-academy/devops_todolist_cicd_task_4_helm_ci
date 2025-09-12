@@ -103,7 +103,7 @@ jobs:
       uses: azure/setup-helm@v4.2.0
 
     - name: Lint helm
-      run: hulm lint ./todoapp
+      run: helm lint ./todoapp
 
     - name: Helm Template
       run: helm template ./todoapp -f ./todoapp/values.yaml
