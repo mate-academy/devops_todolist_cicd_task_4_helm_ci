@@ -10,7 +10,7 @@ on:
 
 env:
   PythonVersion: 3.8
-  DockerImageName: pythontodoapp
+  DockerImageName: ${{ secrets.DOCKERHUB_USERNAME }}/pythontodoapp
 
 jobs:
   python-ci:
@@ -56,11 +56,12 @@ jobs:
         with:
           name: python-artifacts
           path: .
+
       - name: Upload helm artifacts
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
-          path: ${{ github.workspace }}/helm-charts
+          path: ${{ github.workspace }}/helm-charts/
 
   docker-ci:
     name: Docker CI
@@ -109,6 +110,9 @@ jobs:
 
     - name: Helm Template
       run: helm template ./todoapp -f ./todoapp/values.yaml
+
+    - name: Package Helm
+      run: helm package ./todoapp/
 
     - name: Upload Helm package
       uses: actions/upload-artifact@v4
