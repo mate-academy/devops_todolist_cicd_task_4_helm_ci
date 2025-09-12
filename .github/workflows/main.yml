@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
-          path: ${{ github.workspace }}/helm-charts/
+          path: ${{ github.workspace }}/helm-charts/todoapp
 
   docker-ci:
     name: Docker CI
@@ -102,7 +102,7 @@ jobs:
       uses: azure/setup-helm@v4.2.0
 
     - name: Lint helm!
-      run: helm lint ./helm-chart/todoapp
+      run: helm lint ./todoapp
 
     - name: Helm Template!
       run: helm template ./todoapp -f ./todoapp/values.yaml
