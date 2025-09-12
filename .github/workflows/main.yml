@@ -10,7 +10,7 @@ on:
 
 env:
   PythonVersion: 3.8
-  DockerImageName: ${{ secrets.DOCKERHUB_USERNAME }}/pythontodoapp
+  DockerImageName: pythontodoapp
 
 jobs:
   python-ci:
