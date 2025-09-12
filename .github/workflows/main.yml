@@ -67,7 +67,6 @@ jobs:
     name: Docker CI
     runs-on: ubuntu-latest
     needs: python-ci
-    if: ${{ github.ref_name ==('main') }}
     steps:
     - uses: actions/download-artifact@v4
       name: Download python artifacts
@@ -92,7 +91,6 @@ jobs:
     name: Helm CI
     runs-on: ubuntu-latest
     needs: python-ci
-    if: ${{ github.ref_name ==('main') }}
     steps:
     - uses: actions/download-artifact@v4
       name: Download helm artifacts
@@ -104,7 +102,7 @@ jobs:
       uses: azure/setup-helm@v4.2.0
 
     - name: Lint helm!
-      run: helm lint ./todoapp
+      run: helm lint ./helm-chart/todoapp
 
     - name: Helm Template!
       run: helm template ./todoapp -f ./todoapp/values.yaml
