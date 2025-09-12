@@ -61,11 +61,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
-          path: ${{ github.workspace }}/helm-charts/todoapp
-
+          path: ${{ github.workspace }}/helm-charts
   docker-ci:
     name: Docker CI
     runs-on: ubuntu-latest
+    if: ${{ github.ref_name == 'main' }}
     needs: python-ci
     steps:
     - uses: actions/download-artifact@v4
@@ -89,6 +89,7 @@ jobs:
 
   helm-ci:
     name: Helm CI
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     needs: python-ci
     steps:
@@ -98,19 +99,19 @@ jobs:
         name: helm-artifacts
         path: .
 
-    - name: Set up Helm!
+    - name: Set up Helm
       uses: azure/setup-helm@v4.2.0
 
-    - name: Lint helm!
-      run: helm lint ./todoapp
+    - name: Helm Template
+      run: helm template ./todoapp/ -f ./todoapp/values.yaml
 
-    - name: Helm Template!
-      run: helm template ./todoapp -f ./todoapp/values.yaml
+    - name: Lint helm
+      run: helm lint ./todoapp/
 
-    - name: Package Helm!
-      run: helm package ./todoapp/
+    - name: Package Helm
+      run: helm package ./todoapp
 
-    - name: Upload Helm package!
+    - name: Upload Helm package
       uses: actions/upload-artifact@v4
       with:
         name: helm-package
