@@ -14,6 +14,7 @@ env:
 
 jobs:
   python-ci:
+    name: Python CI
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -62,6 +63,7 @@ jobs:
           path: ${{ github.workspace }}/helm-charts
 
   docker-ci:
+    name: Docker CI
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
     needs: python-ci
