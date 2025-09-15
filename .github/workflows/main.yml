@@ -6,7 +6,7 @@ on:
   push:
     branches: ['mykhailoivchenko']
   pull_request:
-    branches: ['mykhailoivchenko']
+    branches: ['main']
 
 env:
   PythonVersion: 3.8
