@@ -57,7 +57,6 @@ jobs:
           path: .
 
       - name: Upload helm artifacts
-        if: github.ref_name == 'main'
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
@@ -85,7 +84,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         push: true
-        context: ./src
+        context: .
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
 
   helm-ci:
@@ -103,13 +102,13 @@ jobs:
       uses: azure/setup-helm@v4.2.0
 
     - name: Template Helm
-      run: helm template ./todoapp/ -f ./todoapp/values.yaml
+      run: helm template ./helm-charts/todoapp/ -f ./todoapp/values.yaml
 
     - name: Lint helm
-      run: helm lint ./todoapp/
+      run: helm lint ./helm-charts/todoapp/
 
     - name: Package Helm
-      run: helm package ./todoapp
+      run: helm package ./helm-charts/todoapp/
 
     - name: Upload Helm package
       uses: actions/upload-artifact@v4
