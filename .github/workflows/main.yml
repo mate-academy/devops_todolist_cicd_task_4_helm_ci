@@ -64,7 +64,6 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
     needs: python-ci
     steps:
 
@@ -102,7 +101,7 @@ jobs:
       uses: azure/setup-helm@v4.2.0
 
     - name: Template Helm
-      run: helm template ./helm-charts/todoapp/ -f ./todoapp/values.yaml
+      run: helm template ./helm-charts/todoapp/ -f ./helm-charts/todoapp/values.yaml
 
     - name: Lint helm
       run: helm lint ./helm-charts/todoapp/
