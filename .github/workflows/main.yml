@@ -1,82 +1,138 @@
-name: python-deployment
-
-run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
+name: "Python + Docker + Helm CI"
+run-name: "CI/CD by ${{ github.actor }} @ ${{ github.sha }}"
 
 on:
   push:
-    branches: ["main"]
+    branches: [ your_name ]       
   pull_request:
-    branches: ["main"]
-
+    branches: [ main ]          
 env:
-  PythonVersion: 3.8
-  DockerImageName: todoapp
-
+  PY_VERSION: "3.11"
+  IMAGE_NAME: "vitalysemeniv/todoapp"            
+  WORKSPACE_DIR: "workspace"                       
+  SRC_DIR: "workspace/src"                         
+  HELM_CHART_DIR: "workspace/src/helm/todoapp"     
 jobs:
-  python-ci:
+  
+  prepare-src:
+    name: Prepare source (single checkout)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src
     steps:
-      - name: Checkout
+      - name: Checkout repository (only once)
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PythonVersion }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PythonVersion }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install coverage flake8
-          pip install -r requirements.txt
-
-      - name: Run tests
-        run: |
-          python manage.py test
-
-      - name: Generate Report
-        run: |
-          coverage run --source='.' manage.py test
-          coverage report
-
-      - name: Linting
-        run: |
-          flake8 . --show-source --statistics --exit-zero
-
-      - name: Check Complexity
-        run: |
-          flake8 . --exit-zero --max-complexity=6
-
-      - name: Upload python artifacts
+      - name: Upload source as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-artifacts
-          path: .
+          name: source-${{ github.sha }}
+          path: ./
+
+  python-ci:
+    name: Python CI
+    needs: prepare-src
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download source artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: source-${{ github.sha }}
+          path: ${{ env.WORKSPACE_DIR }}
+
+      - name: Set up Python ${{ env.PY_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PY_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        working-directory: ${{ env.SRC_DIR }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coverage flake8
+
+      - name: Run tests with coverage (Django)
+        working-directory: ${{ env.SRC_DIR }}
+        run: |
+          coverage run manage.py test
+          coverage xml -o coverage.xml
+
+      - name: Show coverage report
+        working-directory: ${{ env.SRC_DIR }}
+        run: coverage report -m
+
+      - name: Flake8 style check (non-blocking)
+        working-directory: ${{ env.SRC_DIR }}
+        run: flake8 .
+        continue-on-error: true
+
+      - name: Code complexity check (non-blocking)
+        working-directory: ${{ env.SRC_DIR }}
+        run: flake8 . --select=C901 --max-complexity=12
+        continue-on-error: true
+
+      - name: Upload coverage as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: ${{ env.SRC_DIR }}/coverage.xml
 
   docker-ci:
+    name: Docker CI (build & push)
+    needs: [prepare-src, python-ci]
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
-    needs: python-ci
+  
+    if: github.ref == 'refs/heads/your_name'
     steps:
+      - name: Download source artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: source-${{ github.sha }}
+          path: ${{ env.WORKSPACE_DIR }}
 
-    - uses: actions/download-artifact@v4
-      name: Download python artifacts
-      with:
-        name: python-artifacts
-        path: .
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build & Push Docker image (tag = sha)
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.SRC_DIR }}
+          file: ${{ env.SRC_DIR }}/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-    - name: Build and push
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        context: ./src
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+  helm-ci:
+    name: Helm CI (template, lint, package)
+    needs: [prepare-src, python-ci]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/your_name'
+    steps:
+      - name: Download source artifact (helm assets)
+        uses: actions/download-artifact@v4
+        with:
+          name: source-${{ github.sha }}
+          path: ${{ env.WORKSPACE_DIR }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Helm template
+        run: helm template todoapp ${{ env.HELM_CHART_DIR }}
+
+      - name: Helm lint
+        run: helm lint ${{ env.HELM_CHART_DIR }}
+
+      - name: Helm package
+        run: |
+          mkdir -p helm-packages
+          helm package ${{ env.HELM_CHART_DIR }} --destination helm-packages
+
+      - name: Upload Helm chart package
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-${{ github.sha }}
+          path: helm-packages/*.tgz
