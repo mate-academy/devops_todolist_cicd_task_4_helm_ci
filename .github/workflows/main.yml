@@ -4,13 +4,14 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["Langrafka"]
   pull_request:
-    branches: ["main"]
+    branches: ["Langrafka"]
 
 env:
   PythonVersion: 3.8
   DockerImageName: todoapp
+  HelmChartName: todoapp
 
 jobs:
   python-ci:
@@ -19,7 +20,7 @@ jobs:
       run:
         working-directory: ./src
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Python ${{ env.PythonVersion }}
@@ -51,32 +52,69 @@ jobs:
           flake8 . --exit-zero --max-complexity=6
 
       - name: Upload python artifacts
+        if: ${{ github.ref_name == 'Langrafka' }}
         uses: actions/upload-artifact@v4
         with:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        if: ${{ github.ref_name == 'Langrafka' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ./helm-charts
+
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'Langrafka' }}
     needs: python-ci
     steps:
+      - name: Download python artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-artifacts
+          path: .
 
-    - uses: actions/download-artifact@v4
-      name: Download python artifacts
-      with:
-        name: python-artifacts
-        path: .
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          context: ./src
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }},
+                ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:latest
 
-    - name: Build and push
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        context: ./src
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: python-ci
+    if: ${{ github.ref_name == 'Langrafka' }}
+    steps:
+      - name: Download helm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-artifacts
+          path: .
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: Template Helm
+        run: helm template ${{ env.HelmChartName }} ./helm-charts/${{ env.HelmChartName }} -f ./helm-charts/${{ env.HelmChartName }}/values.yaml
+
+      - name: Lint Helm
+        run: helm lint ./helm-charts/${{ env.HelmChartName }}
+
+      - name: Package Helm
+        run: helm package ./helm-charts/${{ env.HelmChartName }}/
+
+      - name: Upload Helm package
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-package
+          path: ./*.tgz
