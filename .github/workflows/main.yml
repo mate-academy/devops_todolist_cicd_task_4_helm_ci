@@ -1,82 +1,91 @@
-name: python-deployment
-
-run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: ["main"]
+    branches: [ main, your_name ]
   pull_request:
-    branches: ["main"]
+    branches: [ main ]
 
 env:
-  PythonVersion: 3.8
-  DockerImageName: todoapp
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
 
 jobs:
-  python-ci:
+  # Checkout repository - виконується один раз
+  checkout:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PythonVersion }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PythonVersion }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install coverage flake8
-          pip install -r requirements.txt
-
-      - name: Run tests
-        run: |
-          python manage.py test
-
-      - name: Generate Report
-        run: |
-          coverage run --source='.' manage.py test
-          coverage report
-
-      - name: Linting
-        run: |
-          flake8 . --show-source --statistics --exit-zero
-
-      - name: Check Complexity
-        run: |
-          flake8 . --exit-zero --max-complexity=6
-
-      - name: Upload python artifacts
+      - name: Upload repository as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-artifacts
+          name: repository
           path: .
+          retention-days: 1
 
-  docker-ci:
+  # Docker build and push job (якщо вже існує)
+  docker-build:
+    needs: checkout
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
-    needs: python-ci
     steps:
+      - name: Download repository artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: repository
 
-    - uses: actions/download-artifact@v4
-      name: Download python artifacts
-      with:
-        name: python-artifacts
-        path: .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-    - name: Build and push
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        context: ./src
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+
+  # Helm CI job - новий job
+  helm-ci:
+    needs: checkout
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download repository artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: repository
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
+      - name: Execute helm template
+        run: |
+          echo "Running helm template..."
+          helm template todoapp ./helm-charts/todoapp
+
+      - name: Execute helm lint
+        run: |
+          echo "Running helm lint..."
+          helm lint ./helm-charts/todoapp
+
+      - name: Package the chart
+        run: |
+          echo "Packaging helm chart..."
+          helm package ./helm-charts/todoapp -d ./packaged-charts
+
+      - name: Upload chart package to GitHub artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart
+          path: ./packaged-charts/*.tgz
+          retention-days: 30
