@@ -56,9 +56,14 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
+
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
     needs: python-ci
     steps:
 
@@ -78,5 +83,34 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         push: true
-        context: ./src
+        context: .
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    needs: python-ci
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: helm-artifacts
+        path: .
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v4.2.0
+
+    - name: Template Helm
+      run: helm template ${{ env.DockerImageName }} ./${{ env.DockerImageName }} -f ./${{ env.DockerImageName }}/values.yaml
+
+    - name: Lint Helm
+      run: helm lint ./${{ env.DockerImageName }}/
+
+    - name: Package Helm
+      run: helm package ./${{ env.DockerImageName }}/
+
+    - name: Upload Helm package
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
