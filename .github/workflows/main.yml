@@ -56,6 +56,39 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-arctifacts
+          path: ${{ github.workspace }}/helm-chart
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: python-ci
+    if: ${{ github.ref_name == 'main' }}
+    steps:
+    - uses: actions/download-artifact@v4
+      name: Download python artifacts
+      with:
+        name: helm-artifacts
+        path: .
+    - name: Setup Helm
+      uses: azure/setup-helm@v1
+    - name: Lint helm
+      run: helm lint ./kube2py
+
+    - name: template Helm
+      run: helm template kube2py ./kube2py -f /kube2py/values.yaml
+
+    - name: Package Helm Chart
+      run: helm package ./kube2py
+
+    - name: Upload helm artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
+
   docker-ci:
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
