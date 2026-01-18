@@ -78,7 +78,7 @@ jobs:
       run: helm lint ./helm-charts
 
     - name: template Helm
-      run: helm template helm-chart ./helm-charts -f /helm-charts/values.yaml
+      run: helm template helm-chart ./helm-charts -f ./helm-charts/values.yaml
 
     - name: Package Helm Chart
       run: helm package ./helm-charts
