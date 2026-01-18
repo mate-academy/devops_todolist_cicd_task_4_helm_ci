@@ -59,8 +59,8 @@ jobs:
       - name: Upload helm artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: helm-arctifacts
-          path: ${{ github.workspace }}/helm-chart
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
 
   helm-ci:
     runs-on: ubuntu-latest
@@ -91,7 +91,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
     needs: python-ci
     steps:
 
