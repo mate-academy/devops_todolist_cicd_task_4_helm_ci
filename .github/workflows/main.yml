@@ -57,14 +57,12 @@ jobs:
           flake8 . --exit-zero --max-complexity=10
 
       - name: Upload python artifacts
-        if: github.ref_name == 'main'
         uses: actions/upload-artifact@v4
         with:
           name: python-artifacts
           path: src/*
 
       - name: Upload Helm Artifacts
-        if: github.ref_name == 'main'
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
