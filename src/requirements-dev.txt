@@ -4,4 +4,4 @@ flake8-return==1.2.0
 
 pytest==8.0.0
 pytest-django==4.8.0
-pytest-cov==4.0.0
+coverage==7.4.0
