@@ -5,14 +5,14 @@ run-name: Run by ${{ github.actor }} on commit ${{ github.sha }}
 on:
   push:
     branches:
-      - d4vp
+      - d4vp4
   pull_request:
     branches:
-      - d4vp
+      - d4vp4
 
 env:
   PYTHON_VERSION: '3.10'
-  DOCKER_IMAGE_NAME: 'django-todo'
+  DOCKER_IMAGE_NAME: 'todo-app'
 
 jobs:
   python-ci:
@@ -56,7 +56,7 @@ jobs:
   docker-ci:
     runs-on: ubuntu-latest
     needs: python-ci
-    if: github.ref == 'refs/heads/d4vp'
+    if: github.ref == 'refs/heads/d4vp4'
 
     steps:
       - name: Download Codebase
@@ -85,7 +85,7 @@ jobs:
   helm-ci:
     runs-on: ubuntu-latest
     needs: python-ci
-    if: github.ref == 'refs/heads/d4vp'
+    if: github.ref == 'refs/heads/d4vp4'
 
     steps:
       - name: Download Codebase
