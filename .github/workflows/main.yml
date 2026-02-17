@@ -5,15 +5,14 @@ run-name: Run by ${{ github.actor }} on commit ${{ github.sha }}
 on:
   push:
     branches:
-      - main
       - d4vp
   pull_request:
     branches:
-      - main
-      - d4vp4
+      - d4vp
 
 env:
   PYTHON_VERSION: '3.10'
+  DOCKER_IMAGE_NAME: 'django-todo'
 
 jobs:
   python-ci:
@@ -57,7 +56,7 @@ jobs:
   docker-ci:
     runs-on: ubuntu-latest
     needs: python-ci
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/d4vp'
+    if: github.ref == 'refs/heads/d4vp'
 
     steps:
       - name: Download Codebase
@@ -81,12 +80,12 @@ jobs:
           context: .
           file: ./src/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/django-todo:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
 
   helm-ci:
     runs-on: ubuntu-latest
     needs: python-ci
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/d4vp'
+    if: github.ref == 'refs/heads/d4vp'
 
     steps:
       - name: Download Codebase
@@ -100,11 +99,11 @@ jobs:
         with:
           version: v3.12.0
 
-      - name: Helm Lint
-        run: helm lint ./chart
-
       - name: Helm Template
         run: helm template ./chart
+
+      - name: Helm Lint
+        run: helm lint ./chart
 
       - name: Helm Package
         run: helm package ./chart
