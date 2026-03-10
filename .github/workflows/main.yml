@@ -13,14 +13,32 @@ env:
   DockerImageName: todoapp
 
 jobs:
+  source-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload repository artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-artifacts
+          path: |
+            src
+            helm-charts
+
   python-ci:
     runs-on: ubuntu-latest
+    needs: source-code
     defaults:
       run:
         working-directory: ./src
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Download repository artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-artifacts
+          path: .
 
       - name: Set up Python ${{ env.PythonVersion }}
         uses: actions/setup-python@v4
@@ -50,22 +68,15 @@ jobs:
         run: |
           flake8 . --exit-zero --max-complexity=6
 
-      - name: Upload python artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-artifacts
-          path: .
-
   docker-ci:
     runs-on: ubuntu-latest
     if: ${{ github.ref_name == 'main' }}
     needs: python-ci
     steps:
-
     - uses: actions/download-artifact@v4
-      name: Download python artifacts
+      name: Download repository artifacts
       with:
-        name: python-artifacts
+        name: repo-artifacts
         path: .
 
     - name: Login to Docker Hub
@@ -80,3 +91,33 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: python-ci
+    steps:
+      - name: Download helm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-artifacts
+          path: .
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Helm template
+        run: helm template todoapp ./helm-charts/todoapp
+
+      - name: Helm lint
+        run: helm lint ./helm-charts/todoapp
+
+      - name: Helm package
+        run: |
+          mkdir -p ./helm-packages
+          helm package ./helm-charts/todoapp -d ./helm-packages
+
+      - name: Upload Helm chart package
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-package
+          path: ./helm-packages/*.tgz
