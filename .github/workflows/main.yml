@@ -1,26 +1,44 @@
 name: python-deployment
 
-run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
+run-name: ${{ github.actor }} - ${{ github.ref_name }} - ${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["main"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: 3.8
-  DockerImageName: todoapp
+  # ЗАМЕНИ todoapp на свое имя репозитория в DockerHub
+  DockerImageName: "your_dockerhub_repo_name" 
 
 jobs:
+  # 1. НОВОЕ ЗАДАНИЕ: Подготовка исходного кода (Один checkout на весь запуск)
+  prep-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4 # ИЗВЛЕКАЕМ ТОЛЬКО ОДИН РАЗ ЗДЕСЬ
+
+      - name: Upload full workspace as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-repo-source
+          path: .
+
   python-ci:
     runs-on: ubuntu-latest
+    needs: prep-code
     defaults:
       run:
         working-directory: ./src
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Download source code
+        uses: actions/download-artifact@v4
+        with:
+          name: full-repo-source
+          path: .
 
       - name: Set up Python ${{ env.PythonVersion }}
         uses: actions/setup-python@v4
@@ -34,49 +52,70 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run: |
-          python manage.py test
-
-      - name: Generate Report
-        run: |
-          coverage run --source='.' manage.py test
-          coverage report
-
-      - name: Linting
-        run: |
-          flake8 . --show-source --statistics --exit-zero
-
-      - name: Check Complexity
-        run: |
-          flake8 . --exit-zero --max-complexity=6
+        run: python manage.py test
 
       - name: Upload python artifacts
         uses: actions/upload-artifact@v4
         with:
           name: python-artifacts
-          path: .
+          path: ./src
 
   docker-ci:
+    name: Docker CI
+    needs: [prep-code, python-ci]
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
-    needs: python-ci
     steps:
+      - name: Download source code
+        uses: actions/download-artifact@v4
+        with:
+          name: full-repo-source
+          path: .
 
-    - uses: actions/download-artifact@v4
-      name: Download python artifacts
-      with:
-        name: python-artifacts
-        path: .
+      - name: Download python build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-artifacts
+          path: ./src
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and push
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        context: ./src
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    name: Helm CI
+    needs: [prep-code, docker-ci]
+    runs-on: ubuntu-latest
+    steps:
+      # ТРЕБОВАНИЕ: Скачать Helm артефакты (код репозитория с чартами) перед операциями
+      - name: Download Helm source code
+        uses: actions/download-artifact@v4
+        with:
+          name: full-repo-source
+          path: .
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Helm Lint
+        run: helm lint ./helm-charts/todoapp # ПРОВЕРЬ ПУТЬ В СВОЕМ РЕПО
+
+      - name: Helm Template
+        run: helm template my-release ./helm-charts/todoapp
+
+      - name: Helm Package
+        run: helm package ./helm-charts/todoapp
+
+      - name: Upload Helm Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-package
+          path: ./*.tgz
