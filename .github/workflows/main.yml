@@ -4,24 +4,33 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["main"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: 3.8
   DockerImageName: todoapp
 
 jobs:
+  checkout-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Upload repository
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository
+          path: .
+
   python-ci:
+    needs: checkout-repo
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./src
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Set up Python ${{ env.PythonVersion }}
         uses: actions/setup-python@v4
         with:
@@ -56,12 +65,18 @@ jobs:
           name: python-artifacts
           path: .
 
+
+      - name: Upload helm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
+
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
-    needs: python-ci
+    if: ${{ github.ref_name == 'your_name' }}
+    needs: [checkout-repo, python-ci]
     steps:
-
     - uses: actions/download-artifact@v4
       name: Download python artifacts
       with:
@@ -80,3 +95,32 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+      runs-on: ubuntu-latest
+      needs: [checkout-repo, python-ci]
+      if: ${{ github.ref_name == 'your_name' }}
+      name: helm-ci
+      steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: helm-artifacts
+          path: .
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: lint helm
+        run: helm lint ./todoapp/
+
+      - name: template helm
+        run: helm template todoapp ./todoapp/ -f /todoapp/values.yaml
+
+      - name: package helm
+        run: helm package ./todoapp
+
+      - name: Upload helm Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-package
+          path: ./*.tgz
