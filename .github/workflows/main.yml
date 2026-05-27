@@ -4,24 +4,33 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["develop"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["develop"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: 3.8
   DockerImageName: todoapp
 
 jobs:
+  checkout-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Upload repository
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository
+          path: .
+
   python-ci:
+    needs: checkout-repo
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./src
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Set up Python ${{ env.PythonVersion }}
         uses: actions/setup-python@v4
         with:
@@ -65,11 +74,9 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'develop' }}
-    needs: python-ci
+    if: ${{ github.ref_name == 'your_name' }}
+    needs: [checkout-repo, python-ci]
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
       name: Download python artifacts
       with:
@@ -91,12 +98,10 @@ jobs:
 
   helm-ci:
       runs-on: ubuntu-latest
-      needs: python-ci
-      if: ${{ github.ref_name == 'develop' }}
+      needs: [checkout-repo, python-ci]
+      if: ${{ github.ref_name == 'your_name' }}
       name: helm-ci
       steps:
-      - name: Checkout
-        uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: helm-artifacts
