@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main", "diana"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["main", "diana"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: 3.8
@@ -59,7 +59,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'your_name' }}
     needs: python-ci
     steps:
 
@@ -84,7 +84,7 @@ jobs:
 
   helm-ci:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/diana'
+    if: github.ref == 'refs/heads/your_name'
     needs: python-ci
 
     steps:
