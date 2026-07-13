@@ -4,13 +4,14 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "diana"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "diana"]
 
 env:
   PythonVersion: 3.8
-  DockerImageName: todoapp
+  DockerImageName: 'devops_todolist_cicd_task_3_docker_ci'
+  HELM_CHART_PATH: "./charts"
 
 jobs:
   python-ci:
@@ -54,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-artifacts
-          path: .
+          path: ${{ github.workspace }}
 
   docker-ci:
     runs-on: ubuntu-latest
@@ -80,3 +81,31 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/diana'
+    needs: python-ci
+
+    steps:
+      - name: Download helm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-artifacts
+          path: .
+
+      - name: Execute helm template
+        run: helm template ${{ env.HELM_CHART_PATH }}
+
+      - name: Execute helm lint
+        run: helm lint ${{ env.HELM_CHART_PATH }}
+
+      - name: Package the chart
+        run: helm package ${{ env.HELM_CHART_PATH }}
+
+      - name: Upload the chart package to GitHub artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-package
+          path: '*.tgz'
+
