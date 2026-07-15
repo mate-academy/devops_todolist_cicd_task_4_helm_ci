@@ -10,7 +10,7 @@ on:
 
 env:
   PythonVersion: "3.13"
-  PYTHON_APP_NAME: "todoapp"
+  DockerImageName: "todoapp"
 
 jobs:
   python-ci:
@@ -51,12 +51,14 @@ jobs:
           flake8 . --exit-zero --max-complexity=6
 
       - name: Upload python artifacts
+        if: ${{ github.ref_name == 'develop' }}
         uses: actions/upload-artifact@v4
         with:
           name: python-artifacts
           path: .
 
       - name: Upload helm artifacts
+        if: ${{ github.ref_name == 'develop' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
@@ -85,11 +87,11 @@ jobs:
       with:
         push: true
         context: ./src
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.PYTHON_APP_NAME }}:${{ github.sha }}
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
 
   helm-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'develop' }}
     needs: python-ci
     steps:
 
