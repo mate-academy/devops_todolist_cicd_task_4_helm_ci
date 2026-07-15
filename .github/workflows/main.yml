@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["main"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: "3.13"
@@ -51,14 +51,14 @@ jobs:
           flake8 . --exit-zero --max-complexity=6
 
       - name: Upload python artifacts
-        if: ${{ github.ref_name == 'develop' }}
+        if: ${{ github.ref_name == 'your_name' }}
         uses: actions/upload-artifact@v4
         with:
           name: python-artifacts
           path: .
 
       - name: Upload helm artifacts
-        if: ${{ github.ref_name == 'develop' }}
+        if: ${{ github.ref_name == 'your_name' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
@@ -66,7 +66,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'your_name' }}
     needs: python-ci
     steps:
 
@@ -91,7 +91,7 @@ jobs:
 
   helm-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'develop' }}
+    if: ${{ github.ref_name == 'your_name' }}
     needs: python-ci
     steps:
 
