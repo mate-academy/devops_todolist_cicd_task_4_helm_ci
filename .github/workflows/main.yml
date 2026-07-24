@@ -57,7 +57,7 @@ jobs:
           path: .
 
       - name: Upload Helm artifacts
-        if: ${{ github.ref_name == 'main' }}
+        if: ${{ github.ref_name == 'eugeneermakov696' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
@@ -117,4 +117,3 @@ jobs:
         path: ./*.tgz
 
 
-        
