@@ -4,13 +4,13 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["ruslan"]
   pull_request:
-    branches: ["main"]
+    branches: ["ruslan"]
 
 env:
   PythonVersion: 3.8
-  DockerImageName: todoapp
+  DockerImageName: matetask4
 
 jobs:
   python-ci:
@@ -58,7 +58,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'ruslan' }}
     needs: python-ci
     steps:
 
@@ -80,3 +80,32 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: python-ci
+    steps:
+
+    - name: Download helm artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-artifacts
+        path: .
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v4
+
+    - name: Helm template
+      run: helm template helm-charts/todoapp
+
+    - name: Helm lint
+      run: helm lint helm-charts/todoapp
+
+    - name: Package chart
+      run: helm package helm-charts/todoapp
+
+    - name: Upload chart package
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-chart
+        path: "*.tgz"
