@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["main"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: 3.8
@@ -57,7 +57,7 @@ jobs:
           path: .
 
       - name: Upload helm artifacts
-        if: ${{ github.ref_name == 'main' }}
+        if: ${{ github.ref_name == 'your_name' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm-charts
@@ -65,7 +65,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'your_name' }}
     needs: python-ci
     steps:
 
@@ -90,7 +90,7 @@ jobs:
 
   helm-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'your_name' }}
     needs: python-ci
     steps:
       - uses: actions/download-artifact@v4
@@ -103,11 +103,11 @@ jobs:
         run: |
           helm lint ./kube2py/
       - name: Template Helm
-        run: helm template kube2py ./kube2py -f ./kube2py/values.yaml
+        run: helm template todoapp ./todoapp -f ./todoapp/values.yaml
       - name: Package Helm
-        run: helm package ./kube2py/
+        run: helm package ./todoapp/
       - name: Upload helm artifacts
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
-          path: kube2py-*.tgz
+          path: ./*.tgz
