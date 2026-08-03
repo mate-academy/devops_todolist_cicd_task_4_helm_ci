@@ -60,7 +60,7 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         uses: actions/upload-artifact@v4
         with:
-          name: helm-artifacts
+          name: helm-charts
           path: ${{github.workspace}}/helm-charts
 
   docker-ci:
@@ -95,7 +95,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: helm-artifacts
+          name: helm-charts
           path: .
       - name: Set up Helm
         uses: azure/setup-helm@v4.2.0
