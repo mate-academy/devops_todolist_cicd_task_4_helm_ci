@@ -105,6 +105,7 @@ jobs:
       - name: Lint Helm
         run: helm lint ./helm-charts/todoapp/
 
+
       - name: Package Helm
         run: helm package ./helm-charts/todoapp/
 
