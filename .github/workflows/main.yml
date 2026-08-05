@@ -16,9 +16,6 @@ env:
 jobs:
   python-ci:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,25 +26,30 @@ jobs:
           python-version: ${{ env.PythonVersion }}
 
       - name: Install dependencies
+        working-directory: ./src
         run: |
           python -m pip install --upgrade pip
           pip install coverage flake8
           pip install -r requirements.txt
 
       - name: Run tests
+        working-directory: ./src
         run: |
           python manage.py test
 
       - name: Generate Report
+        working-directory: ./src
         run: |
           coverage run --source='.' manage.py test
           coverage report
 
       - name: Linting
+        working-directory: ./src
         run: |
           flake8 . --show-source --statistics --exit-zero
 
       - name: Check Complexity
+        working-directory: ./src
         run: |
           flake8 . --exit-zero --max-complexity=6
 
@@ -55,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-artifacts
-          path: ../
+          path: .
 
 
   docker-ci:
