@@ -120,6 +120,22 @@ jobs:
           name: helm-package
           path: ./*.tgz
 
-  body: |
-        Created automatically by GitHub Actions
-        ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  create-pr:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: feature-helm-ci-2
+          branch: feature-helm-ci-2
+          title: Automated Pull Request
+          body: |
+            Created automatically by GitHub Actions
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
