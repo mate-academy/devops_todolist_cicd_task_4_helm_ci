@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["feature-helm-ci"]
+    branches: ["feature-helm-ci-2"]
   pull_request:
-    branches: ["feature-helm-ci"]
+    branches: ["feature-helm-ci-2"]
 
 env:
   PythonVersion: 3.8
@@ -57,7 +57,7 @@ jobs:
           path: .
 
       - name: Upload helm artifacts
-        if: github.ref_name == 'feature-helm-ci'
+        if: github.ref_name == 'feature-helm-ci-2'
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
@@ -65,7 +65,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'feature-helm-ci' }}
+    if: ${{ github.ref_name == 'feature-helm-ci-2' }}
     needs: python-ci
     steps:
 
@@ -93,7 +93,7 @@ jobs:
   helm-ci:
     needs: python-ci
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'feature-helm-ci' }}
+    if: ${{ github.ref_name == 'feature-helm-ci-2' }}
     name: Helm CI
 
     steps:
@@ -120,20 +120,6 @@ jobs:
           name: helm-package
           path: ./*.tgz
 
-  create-pr:
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: main
-          branch: feature-helm-ci
-          title: Automated Pull Request
-          body: Created automatically by GitHub Actions.
+  body: |
+        Created automatically by GitHub Actions
+        ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
