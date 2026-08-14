@@ -58,7 +58,7 @@ jobs:
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'your_name' }}
+    if: ${{ github.ref_name == 'ihor' }}
     needs: python-ci
     steps:
       - uses: actions/download-artifact@v4
