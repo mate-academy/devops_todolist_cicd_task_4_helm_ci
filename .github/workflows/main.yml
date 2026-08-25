@@ -4,9 +4,12 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - nikol/helm-ci
   pull_request:
-    branches: ["main"]
+    branches:
+      - nikol/helm-ci
+  workflow_dispatch:
 
 env:
   PythonVersion: 3.8
@@ -80,3 +83,42 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+    - name: Upload helm artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-artifacts
+        path: .
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref_name == 'your_name' || github.event_name == 'pull_request' }}
+    needs: docker-ci
+    steps:
+
+    - name: Download helm artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: helm-artifacts
+        path: .
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: v3.12.0
+
+    - name: Helm Template
+      run: helm template ./helm-charts/todoapp
+
+    - name: Helm Lint
+      run: helm lint ./helm-charts/todoapp
+
+    - name: Package Helm Chart
+      run: |
+        helm package ./helm-charts/todoapp
+
+    - name: Upload Helm Chart Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-chart-artifact
+        path: ./todoapp-*.tgz
