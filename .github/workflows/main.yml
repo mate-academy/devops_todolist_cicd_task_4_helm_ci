@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["alexey_zhuravel"]
   pull_request:
-    branches: ["main"]
+    branches: ["alexey_zhuravel"]
 
 env:
   PythonVersion: 3.8
@@ -19,46 +19,54 @@ jobs:
       run:
         working-directory: ./src
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PythonVersion }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PythonVersion }}
+    - name: Set up Python ${{ env.PythonVersion }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PythonVersion }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install coverage flake8
-          pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install coverage flake8
+        pip install -r requirements.txt
 
-      - name: Run tests
-        run: |
-          python manage.py test
+    - name: Run tests
+      run: |
+        python manage.py test
 
-      - name: Generate Report
-        run: |
-          coverage run --source='.' manage.py test
-          coverage report
+    - name: Generate Report
+      run: |
+        coverage run --source='.' manage.py test
+        coverage report
 
-      - name: Linting
-        run: |
-          flake8 . --show-source --statistics --exit-zero
+    - name: Linting
+      run: |
+        flake8 . --show-source --statistics --exit-zero
 
-      - name: Check Complexity
-        run: |
-          flake8 . --exit-zero --max-complexity=6
+    - name: Check Complexity
+      run: |
+        flake8 . --exit-zero --max-complexity=6
 
-      - name: Upload python artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-artifacts
-          path: .
+    - name: Upload python artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-artifacts
+        path: .
+
+    - name: Upload helm artifacts
+      if: github.ref_name == 'alexey_zhuravel'
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-artifacts
+        path: ${{ github.workspace }}/helm-charts
+
 
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'alexey_zhuravel' }}
     needs: python-ci
     steps:
 
@@ -80,3 +88,33 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    needs: ["python-ci"]
+    if: github.ref_name == 'alexey_zhuravel'
+    runs-on: ubuntu-latest
+
+    steps:
+    
+    - uses: actions/download-artifact@v4
+      with:
+        name: helm-artifacts
+        path: .
+    
+    - name: Set up Helm
+      uses: azure/setup-helm@v4.2.0
+
+    - name: Template Helm
+      run: helm template todoapp ./todoapp -f ./todoapp/values.yaml
+
+    - name: Lint Helm
+      run: helm lint ./todoapp/
+    
+    - name: Package Helm
+      run: helm package ./todoapp/
+
+    - name: Upload Helm package
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
