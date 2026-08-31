@@ -11,7 +11,7 @@ on:
 env:
   PythonVersion: 3.8
   DockerImageName: todoapp
-  TemplateName: todoapp
+  HelmTemplateName: todoapp
   HelmChartName: todoapp
 
 jobs:
@@ -105,4 +105,16 @@ jobs:
       uses: azure/setup-helm@v4.2.0
     
     - name: Template Helm
-      run: helm template kube2py ./kube2py -f ./kube2py/values.yaml
+      run: helm template ${{ env.HelmTemplateName }} ./${{ env.HelmChartName }} -f ./${{ env.HelmChartName }}/values.yaml
+
+    - name: Lint Helm
+      run: helm lint ./${{ env.HelmChartName }}/
+
+    - name: Package Helm
+      run: helm package ./${{ env.HelmChartName }}/
+
+    - name: Upload Helm package
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
