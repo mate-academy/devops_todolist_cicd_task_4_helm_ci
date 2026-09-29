@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["vadym"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["vadym"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: 3.8
@@ -60,12 +60,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
-          path: ../helm-charts
+          path: ${{ github.workspace }}/helm-charts
 
   docker-ci:
 
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'vadym' }}
+    if: ${{ github.ref_name == 'your_name' }}
     needs: python-ci
     steps:
 
@@ -92,7 +92,7 @@ jobs:
     needs: python-ci
     runs-on: ubuntu-latest
 
-    if: ${{ github.ref_name == 'vadym' }}
+    if: ${{ github.ref_name == 'your_name' }}
 
     steps:
 
