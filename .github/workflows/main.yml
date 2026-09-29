@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main", "vadym"]
+    branches: ["vadym"]
   pull_request:
-    branches: ["main"]
+    branches: ["vadym"]
 
 env:
   PythonVersion: 3.8
@@ -46,7 +46,7 @@ jobs:
         run: |
           flake8 . --show-source --statistics --exit-zero
 
-      - name: Check Complexity
+      - name: Complexity
         run: |
           flake8 . --exit-zero --max-complexity=6
 
@@ -60,12 +60,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: helm-artifacts
-          path: ${{ github.workspace }}/helm-charts
+          path: ../helm-charts
 
   docker-ci:
 
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'vadym' }}
     needs: python-ci
     steps:
 
