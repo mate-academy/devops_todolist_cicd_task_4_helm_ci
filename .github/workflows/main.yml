@@ -92,7 +92,7 @@ jobs:
     needs: python-ci
     runs-on: ubuntu-latest
 
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'vadym' }}
 
     steps:
 
