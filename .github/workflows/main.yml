@@ -4,9 +4,9 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["nook17n1"]
   pull_request:
-    branches: ["main"]
+    branches: ["nook17n1"]
 
 env:
   PythonVersion: 3.8
@@ -56,14 +56,21 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: ${{ github.workspace }}/helm-charts
+
+
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'nook17n1' }}
     needs: python-ci
     steps:
 
-    - uses: actions/download-artifact@v4
-      name: Download python artifacts
+    - name: Download python artifacts
+      uses: actions/download-artifact@v4
       with:
         name: python-artifacts
         path: .
@@ -80,3 +87,35 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: ['python-ci']
+    if: ${{ github.ref_name == 'nook17n1' }}
+    name: Helm-CI  
+    steps:
+
+    - name: Download helm artifacts
+      uses: actions/download-artifact@v4
+      with: 
+        name: helm-artifacts
+        path: .
+
+    - name: Set Up Helm
+      uses: azure/setup-helm@v4.2.0
+
+    - name: Lint Helm
+      run: helm lint ./todoapp/
+
+    - name: Template Helm
+      run: helm template todoapp ./todoapp/ -f ./todoapp/values.yaml
+
+    - name: Package Helm
+      run: helm package ./todoapp
+
+    - name: Upload Helm Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-package
+        path: ./*.tgz
