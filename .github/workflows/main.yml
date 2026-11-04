@@ -1,29 +1,46 @@
 name: python-deployment
 
-run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
+run-name: ${{ github.actor }} - ${{ github.ref_name }} - ${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["taras", "main"]
   pull_request:
-    branches: ["main"]
+    branches: ["taras", "main"]
 
 env:
-  PythonVersion: 3.8
+  PythonVersion: "3.11"
   DockerImageName: todoapp
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload full repository
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-archive
+          path: .
+          include-hidden-files: true
+
   python-ci:
+    needs: prepare
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./src
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Download repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-archive
+          path: .
 
       - name: Set up Python ${{ env.PythonVersion }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PythonVersion }}
 
@@ -34,8 +51,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run: |
-          python manage.py test
+        run: python manage.py test
 
       - name: Generate Report
         run: |
@@ -43,40 +59,62 @@ jobs:
           coverage report
 
       - name: Linting
-        run: |
-          flake8 . --show-source --statistics --exit-zero
+        run: flake8 . --show-source --statistics --exit-zero
 
       - name: Check Complexity
-        run: |
-          flake8 . --exit-zero --max-complexity=6
-
-      - name: Upload python artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-artifacts
-          path: .
+        run: flake8 . --exit-zero --max-complexity=6
 
   docker-ci:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
     needs: python-ci
+    runs-on: ubuntu-latest
+    if: ${{ github.ref_name == 'taras' || github.ref_name == 'main' }}
     steps:
+      - name: Download repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-archive
+          path: .
 
-    - uses: actions/download-artifact@v4
-      name: Download python artifacts
-      with:
-        name: python-artifacts
-        path: .
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          context: ./src
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
 
-    - name: Build and push
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        context: ./src
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+  helm-ci:
+    needs: python-ci
+    runs-on: ubuntu-latest
+    if: ${{ github.ref_name == 'taras' || github.ref_name == 'main' }}
+    steps:
+      - name: Download repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-archive
+          path: .
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Helm lint
+        run: helm lint ./helm-charts/kube2py
+
+      - name: Helm template
+        run: helm template kube2py ./helm-charts/kube2py -f ./helm-charts/kube2py/values.yaml
+
+      - name: Helm package
+        run: helm package ./helm-charts/kube2py -d ./dist
+
+      - name: Upload Helm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-package
+          path: ./dist/*.tgz
