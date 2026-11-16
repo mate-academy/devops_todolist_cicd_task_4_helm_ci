@@ -4,17 +4,18 @@ run-name: ${{ github.actor }} - ${{ github.ref_name}} -${{ github.sha }}
 
 on:
   push:
-    branches: ["main"]
+    branches: ["your_name"]
   pull_request:
-    branches: ["main"]
+    branches: ["your_name"]
 
 env:
   PythonVersion: 3.8
   DockerImageName: todoapp
+  HelmChartPath: ./helm-charts/todoapp
 
 jobs:
   python-ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./src
@@ -56,9 +57,16 @@ jobs:
           name: python-artifacts
           path: .
 
+      - name: Upload helm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-artifacts
+          path: helm-charts
+          include-hidden-files: true
+
   docker-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'your_name' }}
     needs: python-ci
     steps:
 
@@ -80,3 +88,29 @@ jobs:
         push: true
         context: ./src
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DockerImageName }}:${{ github.sha }}
+
+  helm-ci:
+    runs-on: ubuntu-latest
+    needs: python-ci
+    steps:
+      - name: Download helm artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-artifacts
+          path: helm-charts
+
+      - name: Execute helm template
+        run: helm template todoapp ${{ env.HelmChartPath }}
+
+      - name: Execute helm lint
+        run: helm lint ${{ env.HelmChartPath }}
+
+      - name: Package the chart
+        run: helm package ${{ env.HelmChartPath }} --destination ./helm-package
+
+      - name: Upload the chart package
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-package
+          path: ./helm-package/*.tgz
+          if-no-files-found: error
